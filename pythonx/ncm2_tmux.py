@@ -61,11 +61,14 @@ class Source(Ncm2Source):
         b = ctx['base']
         matcher = self.matcher_get(ctx['matcher'])
         matches = []
+        seen = {}
 
         for pane in panes:
             for word in pat.finditer(pane):
-                m = self.match_formalize(ctx, word.group())
-                if matcher(b, m):
+                w = word.group()
+                m = self.match_formalize(ctx, w)
+                if w not in seen and matcher(b, m):
+                    seen[w] = True
                     matches.append(m)
 
         self.complete(ctx, ctx['startccol'], matches)
