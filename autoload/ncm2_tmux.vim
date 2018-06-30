@@ -15,6 +15,10 @@ let g:ncm2_tmux#source = get(g:, 'ncm2_tmux#source', {
             \ 'on_warmup': {_ -> g:ncm2_tmux#proc.jobstart()},
             \ })
 
+let g:ncm2_tmux#source = extend(g:ncm2_tmux#source,
+            \ get(g:, 'ncm2_tmux#source_override', {}),
+            \ 'force')
+
 func! ncm2_tmux#init()
     call ncm2#register_source(g:ncm2_tmux#source)
 endfunc
