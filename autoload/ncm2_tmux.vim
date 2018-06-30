@@ -10,9 +10,8 @@ let g:ncm2_tmux#source = get(g:, 'ncm2_tmux#source', {
             \ 'enable': $TMUX != '',
             \ 'priority': 4,
             \ 'mark': 'T',
-            \ 'on_complete': {c -> 
-            \       g:ncm2_tmux#proc.try_notify('on_complete', c)},
-            \ 'on_warmup': {_ -> g:ncm2_tmux#proc.jobstart()},
+            \ 'on_complete': 'ncm2_tmux#on_complete',
+            \ 'on_warmup': 'ncm2_tmux#on_warmup',
             \ })
 
 let g:ncm2_tmux#source = extend(g:ncm2_tmux#source,
@@ -23,4 +22,10 @@ func! ncm2_tmux#init()
     call ncm2#register_source(g:ncm2_tmux#source)
 endfunc
 
+func! ncm2_tmux#on_warmup(ctx)
+    call g:ncm2_tmux#proc.jobstart()
+endfunc
 
+func! ncm2_tmux#on_complete(ctx)
+    call g:ncm2_tmux#proc.try_notify('on_complete', a:ctx)
+endfunc
