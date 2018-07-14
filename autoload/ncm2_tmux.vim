@@ -5,18 +5,15 @@ let s:loaded = 1
 
 let g:ncm2_tmux#proc = yarp#py3('ncm2_tmux')
 
-let g:ncm2_tmux#source = get(g:, 'ncm2_tmux#source', {
+let g:ncm2_tmux#source = extend(
+            \ get(g:, 'ncm2_tmux#source', {}), {
             \ 'name': 'tmux',
             \ 'enable': $TMUX != '',
             \ 'priority': 4,
             \ 'mark': 'T',
             \ 'on_complete': 'ncm2_tmux#on_complete',
             \ 'on_warmup': 'ncm2_tmux#on_warmup',
-            \ })
-
-let g:ncm2_tmux#source = extend(g:ncm2_tmux#source,
-            \ get(g:, 'ncm2_tmux#source_override', {}),
-            \ 'force')
+            \ }, 'keep')
 
 func! ncm2_tmux#init()
     call ncm2#register_source(g:ncm2_tmux#source)
