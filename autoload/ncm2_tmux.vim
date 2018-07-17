@@ -12,6 +12,7 @@ let g:ncm2_tmux#source = extend(
             \ 'priority': 4,
             \ 'mark': 'T',
             \ 'on_complete': 'ncm2_tmux#on_complete',
+            \ 'on_completed': 'ncm2_tmux#on_completed',
             \ 'on_warmup': 'ncm2_tmux#on_warmup',
             \ }, 'keep')
 
@@ -25,4 +26,8 @@ endfunc
 
 func! ncm2_tmux#on_complete(ctx)
     call g:ncm2_tmux#proc.try_notify('on_complete', a:ctx)
+endfunc
+
+func! ncm2_tmux#on_completed(ctx, completed)
+    call g:ncm2_tmux#proc.try_notify('on_completed', a:ctx, a:completed)
 endfunc
