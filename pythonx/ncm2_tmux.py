@@ -13,63 +13,61 @@ class Source(Ncm2Source):
     def on_complete(self, ctx):
         pat = re.compile(ctx['word_pattern'])
 
-        # tmux list-window -F '#{window_index}'
-        # tmux capture-pane -p -t "$window_index.$pane_index"
-        proc = Popen(args=['tmux', 'list-window', '-F', '#{window_index} #{window_active}'],
+        # get current session id
+
+        proc = Popen(args=['tmux', 'display-message', '-p', '#{session_id}'],
                      stdin=subprocess.PIPE,
                      stdout=subprocess.PIPE,
                      stderr=subprocess.PIPE)
-
         outs, errs = proc.communicate(timeout=5)
-        windows = outs.decode('utf-8')
-        logger.info('list-window: %s', windows)
+        cur_session = outs.decode().strip()
 
-        # parse windows
-        panes = []
-        for win in windows.strip().split('\n'):
-            wid, wactive = win.split(' ')
-            wactive = int(wactive)
+        proc = Popen(args=['tmux', 'list-panes', '-a', '-F', '#{session_id} #{pane_id} #{pane_active} #{window_active}'],
+                     stdin=subprocess.PIPE,
+                     stdout=subprocess.PIPE,
+                     stderr=subprocess.PIPE)
+        outs, errs = proc.communicate(timeout=5)
+        lines = outs.decode('utf-8')
 
-            proc = Popen(args=['tmux', 'list-panes', '-t', wid, '-F', '#{pane_index} #{pane_active}'],
-                         stdin=subprocess.PIPE,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
-            outs, errs = proc.communicate(timeout=5)
-            pane_ids = outs.decode('utf-8')
-
-            for pane in pane_ids.strip().split('\n'):
-                pid, pactive = pane.split(' ')
-                pactive = int(pactive)
-
-                if wactive and pactive:
-                    # ignore current pane
-                    continue
-
-                proc = Popen(args=['tmux', 'capture-pane', '-p', '-t', '{}.{}'.format(wid, pid)],
-                             stdin=subprocess.PIPE,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-                outs, errs = proc.communicate(timeout=5)
-                try:
-                    outs = outs.decode('utf-8')
-                    panes.append(outs)
-                except Exception as ex:
-                    logger.exception(
-                        'exception, failed to decode output, %s', ex)
-                    pass
-
-        b = ctx['base']
+        base = ctx['base']
         matcher = self.matcher_get(ctx['matcher'])
         matches = []
         seen = {}
 
-        for pane in panes:
-            for word in pat.finditer(pane):
-                w = word.group()
-                m = self.match_formalize(ctx, w)
-                if w not in seen and matcher(b, m):
-                    seen[w] = True
-                    matches.append(m)
+        for line in lines.strip().split('\n'):
+            session_id, pane_id, pactive, wactive = line.split(' ')
+            pactive, wactive = int(pactive), int(wactive)
+
+            if wactive and pactive and session_id == cur_session:
+                # ignore current pane
+                continue
+
+            proc = Popen(args=['tmux', 'capture-pane', '-p', '-t', '{}'.format(pane_id)],
+                         stdin=subprocess.PIPE,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+            outs, errs = proc.communicate(timeout=5)
+            try:
+                outs = outs.decode('utf-8')
+
+                for word in pat.finditer(outs):
+                    w = word.group()
+                    if w in seen:
+                        m = seen[w]
+                        ud = m['user_data']
+                    else:
+                        m = self.match_formalize(ctx, w)
+                        ud = m['user_data']
+                        ud['location'] = []
+                        if not matcher(base, m):
+                            continue
+                        matches.append(m)
+                    ud['location'].append(dict(pane_id=pane_id,
+                                               start=word.start()))
+            except Exception as ex:
+                logger.exception(
+                    'exception, failed to decode output, %s', ex)
+                pass
 
         self.complete(ctx, ctx['startccol'], matches)
 
