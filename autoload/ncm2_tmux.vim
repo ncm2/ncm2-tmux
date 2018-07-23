@@ -8,7 +8,7 @@ let g:ncm2_tmux#proc = yarp#py3('ncm2_tmux')
 let g:ncm2_tmux#source = extend(
             \ get(g:, 'ncm2_tmux#source', {}), {
             \ 'name': 'tmux',
-            \ 'enable': $TMUX != '',
+            \ 'enable': 1,
             \ 'priority': 4,
             \ 'mark': 'T',
             \ 'on_complete': 'ncm2_tmux#on_complete',
