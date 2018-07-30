@@ -34,7 +34,10 @@ class Source(Ncm2Source):
         matches = []
         seen = {}
 
-        for line in lines.strip().split('\n'):
+        for line in lines.split('\n'):
+            if line == '':
+                continue
+
             session_id, pane_id, pactive, wactive = line.split(' ')
             pactive, wactive = int(pactive), int(wactive)
 
